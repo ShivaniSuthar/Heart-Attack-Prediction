@@ -1,0 +1,766 @@
+---
+title: "project_team10_fa23"
+output: html_document
+
+project members: 'Laura Charria, Sarita Raghunath, Hiba Shaikh, Shivani Suthar'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Introduction
+Every year, about 695,000 people die of heart disease and 805,000 suffer from heart attacks in the United States alone (Department of Health, 2023). Even more shockingly, someone has a heart attack every 40 seconds in the United States (CDC, 2023). This begs the question - what are leading factors that contribute to heart attacks? According to John Hopkins University, major contributors of heart attacks and heart disease include high cholesterol, genetic factors, blood pressure, plaque buildup in arteries, obesity, diabetes, high blood sugar levels, and of course, lifestyle choices such as a sedentary lifestyle and smoking (John Hopkins, 2023). Many other medical institutions such as the CDC (CDC, 2022), University of Michigan Medicine (University of Michigan, 2018), and the World Health Organization (World Health Organization, 2023) have also found this and it is generally well established in the medical community that these are major contributors of heart attacks. In addition, it has been found that certain medical tests such as electrocardiograms (EKGs) can be useful in predicting the likelihood of someone getting a heart attack (Cardiac Direct, 2022) and patient symptoms such as chest pain levels can also be useful in predicting heart attacks (UPenn Medicine, 2022). Finally, a person's sex also play a significant role in determining the likelihood of them getting a heart attack. More specifically, according to Harvard University, men are about twice as likely as women to have a heart attack (Harvard, 2016).  
+
+Clearly, while there are many well established facts regarding how certain demographic and biometric factors can influence the chance of someone getting a heart attack, the the specific degree of influence each of these factors has has not been researched as much and is not as well established. 
+
+Hence, the primary goal of our project is to determine the specific degree of influence certain demographic and biometric variables have on the likelihood of someone getting a heart attack. More specifically, we aim to address this goal by answering the question - To what degree do certain demographic and biometric factors influence the chance that someone will get a heart attack? We believe that by answering this question, it can help medical providers better assess the likelihood of someone getting a heart attack given certain demographic and biometric information and it can also help them better advise patients on what they should focus on such as lowering their blood sugar levels or their cholesterol. 
+
+The secondary goal of our project is to look more in depth as to how these degrees of influence may vary by someone's sex since as mentioned, sex is a major determinant of a heart attack. More specifically, we aim to address this goal by answering the question - How might these degrees differ between men and women in our dataset? We believe that by answering this question and getting more specific values for the degrees of influence based on someone's sex, it can help medical providers more accurately assess the likelihood of someone getting a heart attack and can help them better advise their patients.
+
+Lastly, below, in the "The Raw Data" section of our project, we have described the details of the original dataset (Rahman, 2021) we are working with and in the "Data Wrangling" section of our project, we have described the cleaned, and final version of the dataset along with our reasoning for how we modified the original dataset in order to answer our questions. Briefly however, it will be seen that many of the variables in the final dataset that we use align with the aforementioned determinants of a heart attack such as cholesterol, EKG results, and blood sugar, allowing us to contribute to the current bed of research by addressing the gap of determining the specific degrees of influence of these variables along with some others. 
+
+
+
+## Questions
+
+As mentioned, the questions we aim to answer in this project are
+
+1) To what degree do certain demographic and biometric factors influence the chance that someone will get a heart attack?
+2) How might these degrees differ between men and women?
+
+## The Raw Data
+
+#### Imports
+
+Here, we are importing R-packages necessary to work with our data:
+
+```{r}
+
+library(tidyverse)
+library(tidymodels)
+library(dplyr)
+library(forcats)
+library(tidyr)
+library(ggplot2)
+library(pROC)
+
+```
+
+
+#### Displaying the Raw Data
+
+Here, we are reading in the raw data. We saved it in the variable "heart":
+```{r}
+
+heart = read_csv('heart.csv')
+
+```
+
+Here, we are displaying the raw data
+```{r}
+
+heart
+
+```
+#### Describing the Raw Data
+
+The table above displays our raw data. Each row in our data table represents a different patient. Below is a description of each of the columns in our table:
+
+Please note - "ST" in some of the definitions below stands for a segment of an EKG wave
+
+Age: Age of the patient
+
+Sex: Sex of the patient (0 = female; 1 = male)
+
+Cp: Chest pain type (1 = typical angina, 2 = atypical angina, 3 = non-anginal pain, 4 = asymptomatic). Here, "typical angina" means a feeling of pressure-like, heaviness, tightness, or squeezing, "atypical angina" means chest pain that doesn't meet the criteria for typical angina, "non-anginal pain" means pain a person without heart disease may feel behind the breast bone, and "asymptomatic" means that the patient didn't have any chest pain. 
+
+Trtbps: Resting blood pressure (in mm Hg)
+
+Chol: Cholesterol in mg/dl fetched via BMI sensor
+
+Fbs: Fasting blood sugar > 120 mg/dl (1 = true; 0 = false)
+
+Restecg: Resting electrocardiograph (EKG) results (0 = normal, 1 = having ST-T wave abnormality - T wave inversions and/or ST elevation or depression of > 0.05 mV, 2 = showing probable or definite left ventricular hypertrophy by Estes' criteria. An EKG is a test that measures electric signals in the heart). In short, a "0" means the patient's EKG was normal, a "1" means that was abnormality in the heart signal, and "3" means that there abnormality in the test indictive of a structural issue in the heart. 
+
+Thalachh: Maximum heart rate achieved
+Please note - On the website containing our dataset, this variable was listed as "thalach" but we were able to confidently determine that "thalach" corresponded to "thalachh" in our displayed dataset. 
+
+Exng: Exercise induced angina (1 = yes; 0 = no)
+Please note - On the website containing our dataset, this variable was listed as "exang" but we were able to confidently determine that "exang" corresponded to "exng" in our displayed dataset. 
+
+Oldpeak: ST depression induced by exercise relative to rest
+
+Slp: The slope of the peak exercise ST segment (1 = upsloping; 2 = flat; 3 = downsloping)
+
+Caa: Number of major blood vessels
+Please note - On the website containing our dataset, this variable was listed as "ca" but we were able to confidently determine that "ca" corresponded to "caa" in our displayed dataset. 
+
+Thall: Thall is a thallium stress test. A "normal" result indicates that the blood flow to all parts of the heart is adequate, both at rest and during exercise. A "fixed defect" on a thallium stress test indicates an area of the heart that has consistently reduced blood flow, both at rest and during stress. A "reversible defect" suggests that an area of the heart has adequate blood flow at rest but not during exercise or stress (ischemia). (0 = normal; 1 = fixed defect; 2 = reversible defect)
+
+Output: The chance of someone getting a heart attack (0 = less chance of heart attack, 1 = more chance of heart attack)
+Please note - On the website containing our dataset, this variable was listed as "target" but we were able to confidently determine that "target" corresponded to "output" in our displayed dataset. 
+
+## Data Wrangling/Cleaning for Exploratory Data Analysis (EDA) Graphs
+Here, we will be cleaning/modifying our raw dataset in order to convert it into a more workable format for our analyses.
+
+First, we will be dropping columns from our raw dataset that we are not interested in working with. Namely, these columns are "oldpeak", "slp", and "caa" as we are not sure how to interpret these values since we are not medical professionals:
+```{r}
+
+heart <- heart |>
+  select(-oldpeak, -slp, -caa)
+
+```
+
+Second, we will be renaming some of the column names based on their above definitions for clarity. Please look at code comments for specifics:
+```{r}
+
+# Here, we are renaming "trtbps" to "resting_bp" for resting blood sugar.
+heart <- heart |>
+  rename(resting_bp = trtbps)
+
+# Here, we are renaming "thalachh" to "max_hr" for maximum heart rate. 
+heart <- heart |>
+  rename(max_hr = thalachh)
+
+
+# Here, we are renaming the 0s in the sex column to female and the 1s to male for clarity in our EDA graphs. 
+heart <- heart |>
+  mutate( sex = factor(sex, levels = c(0, 1), labels = c("female", "male")))
+
+
+# Here, we are renaming the 0s in the fbs column to false if someone has a fbs of 120 mg/dl or less and true if they had greater than 120 mg/dl for clarity in our EDA graphs. 
+heart <- heart |>
+  mutate(fbs = factor(fbs, levels = c(0, 1), labels = c("false", "true")))
+
+
+# Here, we are renaming the 0s in the restecg column to "normal", the 1s to "having ST-T", and the 2s to "hypertrophy" for clarity in our EDA graph especially since having ST-T means abnormalities and can indicate chronic heart conditions.
+heart <- heart |>
+  mutate(restecg = factor(restecg, levels = c(0, 1, 2), labels = c("normal", "having ST-T", "hypertrophy")))
+
+
+# Here, we are renaming the 1s in the thal column to "normal", the 2s to "fixed defect" and the 3s to "reversible defect for clarity in our EDA graphs. 
+heart <- heart |>
+  mutate(thall = factor(thall, levels = c(1, 2, 3), labels = c("normal", "fixed defect", "reversible defect")))
+
+
+# Here, we are renaming the 0s in the cp column to "typical angina", the 1s to "atypical angina", the 2s to "non-anginal pain", and the 3s to "asymptomatic" for clarity in our EDA graphs. 
+heart <- heart |>
+ mutate(cp = factor(cp, levels = c(0, 1, 2, 3), labels = c("typical angina", "atypical angina", "non-anginal pain", "asymptomatic")))
+
+
+# Here, we are renaming the 0s in the exng column to no and the 1s to yes for clarity in our EDA graphs. 
+heart <- heart |>
+ mutate(exng = factor(exng, levels = c(0, 1), labels = c("no", "yes")))
+
+
+# Here we are removing missing values (NA)
+heart <- na.omit(heart)
+
+# Here, we are renaming the output column to "chance_HA" for chance of heart attack and renaming the 0s in the column to "less likely" and the 1s to "more likely" for clarity in our EDA graphs. 
+heart <- heart |>
+  rename(chance_HA = output) |>
+  mutate(chance_HA = factor(chance_HA, levels = c(0, 1), labels = c("less likely", "more likely"))) 
+heart
+
+```
+
+Third, we will add an "age_group" variable to our dataset since for our second question, we would like to get a deeper look into how the degrees of influence of the heart attack determinants differ with age.
+```{r}
+
+heart$age_group <- cut(
+  heart$age, 
+  breaks = seq(0, 100, by = 10),
+  include.lowest = TRUE, 
+  labels = sprintf("%d-%d", seq(0, 90, by = 10), seq(9, 99, by = 10)),
+  right = FALSE
+)
+
+```
+
+Lastly, we will save our new, cleaned, dataset in the variable "heart_clean". This is the df that will be used for our EDA. "Heart_clean" is displayed below:
+```{r}
+
+heart_clean <- heart
+
+heart_clean
+
+```
+
+## Exploratory Data Analysis
+
+Here, we will conduct EDA on our heart_clean data to get a better idea of the characteristics of the data we are working with and to see if any of the results from our EDA might indicate some smaller interesting findings.
+
+First, we are going to take a look at the important demographic information in our dataset - age and sex. 
+```{r}
+library(ggplot2)
+library(RColorBrewer)
+
+# Create a histogram of ages
+ind_age <- ggplot(heart_clean, aes(x = age)) +
+  geom_histogram(binwidth = 1, fill = "#e683d5", color = "#5342b3") +
+  labs(title = "Distribution of Ages in heart Dataset", 
+       x = "Age", 
+       y = "Frequency") +
+  theme_minimal()
+
+
+ind_age 
+
+
+
+```
+
+```{r}
+
+
+age_range <- ggplot(heart_clean, aes(x = age_group, fill = age_group)) +
+  geom_bar(width = 0.8) +
+  labs(title = "Distribution of Age Ranges in Heart Dataset", 
+       x = "Age Range", 
+       y = "Frequency") +
+  scale_fill_brewer(palette = "Pastel1") +
+  theme_minimal()
+
+age_range
+```
+\n In the above graphs, we see the distribution of ages and age ranges in our dataset. Our dataset spans ages 20-79, with a high number of patients in the 40-69 range. 
+
+
+
+```{r}
+library(ggplot2)
+#male female split in dataset 
+ggplot(heart_clean, aes(x = sex, fill = sex)) +
+  geom_bar() +
+   scale_fill_brewer(palette = "Pastel1") +
+  labs(title = "Gender Distribution",
+       x = "Gender",
+       y = "Frequency") +
+  theme_minimal()
+
+
+```
+
+
+\n Our data set has almost double the amount of males compared to females. 
+```{r}
+
+ggplot(heart_clean, aes(x = sex, fill = chance_HA)) +
+  geom_bar(position = position_dodge()) +  
+   scale_fill_brewer(palette = "Pastel1") +
+  labs(title = "Gender Distribution of Overall Heart Attack Risk",
+       x = "Gender",
+       y = "Count") +
+  theme_minimal() +
+  ylim(0, 300)
+
+```
+
+
+\n Here, we see that within the female group, there are more females who are more likely to get a heart attack. In the male group, there is a roughly similar amount of males who are likely or less likely to get a heart attack. While there are a similar number of males and females who are more likely to get heart attacks, there is a significantly higher number of males who are less likely to get a heart attack compared to females less likely to get a heart attack in this dataset. 
+
+```{r}
+
+ggplot(heart_clean, aes(x = age_group, fill = chance_HA)) +
+  geom_bar(position = "dodge") +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(title = "Heart Attack Chance by Age Group", 
+       x = "Age Group", 
+       y = "Count", 
+       fill = "Chance of Heart Attack") +
+  theme_minimal()
+
+```
+
+
+
+\n Here we see the chance of heart attack within each age group. There is a notable difference in the 40-49 age range of those more likely to get a heart attack. This difference seems to decrease in the 50-59 group and there are some differences again in the 60-69 group.
+
+```{r}
+
+# Calculate the proportions of more likelihood of heart attack in male and females for each age group 
+groups_summary <- heart_clean |>
+  group_by(age_group, sex) |>
+  summarise(count = n(), 
+            more_likely_count = sum(chance_HA == "more likely")) |>
+  mutate(proportion_more_likely = more_likely_count / count) |>
+  ungroup()
+
+
+
+ggplot(groups_summary, aes(x = age_group, y = proportion_more_likely, group = sex, color = sex)) +
+  geom_line() +
+  geom_point() +
+  scale_color_brewer(palette = "Pastel1") +  
+  labs(title = "Proportion of 'More Likely' Heart Attack Risk by Age Group and Gender",
+       x = "Age Group",
+       y = "Proportion of 'More Likely'",
+       color = "Gender") +
+  theme_minimal()
+
+
+
+```
+
+
+
+
+\n Here, we are starting to see that gender does play a crucial role in characterizing chance of heart attack in our dataset. The proportion of females more likely to get heart attacks is consistently higher than the proportion of males who are more likely to get heart attacks. 
+
+\n Now, we can start to look at our biometric data i.e., Heart rate, cholesterol, blood pressure, thallamic test results, and EKG results. 
+
+```{r}
+ggplot(heart_clean, aes(x = cp, fill = chance_HA)) +
+  geom_bar(position = position_dodge()) +
+  labs(title = "Heart Attack Likelihood by Chest Pain Severity",
+       x = "Chest Pain Type",
+       y = "Count",
+       fill = "Heart Attack Likelihood") +
+  scale_fill_brewer(palette = "Set1") + 
+  theme_minimal()
+
+```
+
+
+
+
+
+\n Here, we are seeing that people who have typical angina chest pain are significantly less likely to have a heart attack. We also see that those with non-anginal pain are more likely than others to have a heart attack. 
+
+
+```{r}
+ggplot(heart_clean, aes(x = restecg, fill = chance_HA)) +
+  geom_bar(position = position_dodge()) +
+  labs(title = "Heart Attack Likelihood by ECG result",
+       x = "ECG result", 
+       y = "Count",
+       fill = "Heart Attack Likelihood") +
+  scale_fill_brewer(palette = "Set2") + 
+  theme_minimal()
+```
+
+
+
+
+\n Having an "having ST-T" ECG result, indicating abnormalities, seems to be an important factor in how likely someone is to have a heart attack. Normal ECG results also seem to indicate that someone is less likely to have a heart attack. 
+
+```{r}
+ggplot(heart_clean, aes(x = thall, fill = chance_HA)) +
+  geom_bar(position = position_dodge()) +
+  labs(title = "Heart Attack Likelihood by Thallium Test Result ",
+       x = "Result",
+       y = "Count",
+       fill = "Heart Attack Likelihood") +
+  scale_fill_brewer(palette = "Set1") + 
+  theme_minimal()
+```
+
+
+
+\n Here, we see that receiving a result from the Thallium test that indicates having a fixed defect seems to contribute to likelihood of heart attack. More people who receive a result indicating reversible defects are less likely to have a heart attack. 
+
+```{r}
+ggplot(heart_clean, aes(x = exng, fill = chance_HA)) +
+  geom_bar(position = position_dodge()) +
+  labs(title = "Heart Attack Likelihood by if exercise induced angina",
+       x = "Result",
+       y = "Count",
+       fill = "Heart Attack Likelihood") +
+  scale_fill_brewer(palette = "Accent") + 
+  theme_minimal()
+```
+
+
+
+\n Heart attack likelihood is significantly higher in those who do not have exercised induced chest pain in our dataset. 
+
+```{r}
+ggplot(heart_clean, aes(x = exng, fill = chance_HA)) +
+  geom_bar(position = position_dodge()) +
+  labs(title = "Heart Attack Likelihood by if fasting blood sugar is over 120 mg/dl ",
+       x = "Result",
+       y = "Count",
+       fill = "Heart Attack Likelihood") +
+  scale_fill_brewer(palette = "Paired") + 
+  theme_minimal()
+```
+
+
+
+
+\n If fasting blood sugar is below 120 mg/dl, heart attack seems to be more likely. Heart attack likelihood is lower in those with blood sugar levels over 120 mg/dl in this dataset. 
+
+
+```{r}
+# For max heart rate
+ggplot(heart_clean, aes(x = chance_HA, y = max_hr, fill = chance_HA)) +
+  geom_boxplot() +
+  labs(title = "Max Heart Rate distribution and Heart Attack Risk",
+       x = "Heart Attack Likelihood",
+       y = "Max Heart Rate")+
+  scale_fill_brewer(palette = "GnBu") 
+```
+
+
+
+
+\n There is a significant increase in the average maximum heart rate of those more likely to get a heart attack. The less-likely and more likely chance of heart rate groups do not have a significant overlap in distribution as well. 
+
+
+```{r}
+# For cholesterol
+ggplot(heart_clean, aes(x = chance_HA, y = chol, fill = chance_HA)) +
+  geom_boxplot() +
+  labs(title = "Cholesterol value distribution and Heart Attack Risk",
+       x = "Heart Attack Likelihood",
+       y = "Cholesterol")+
+  scale_fill_brewer(palette = "OrRd") 
+
+```
+
+
+
+
+\n In our dataset, it seems that the average cholesterol level between those more likely and less likely to have a heart attack is very similar. Going into analysis, this may not be a significant predictor of heart attack. 
+
+```{r}
+# For cholesterol
+ggplot(heart_clean, aes(x = chance_HA, y = resting_bp, fill = chance_HA)) +
+  geom_boxplot() +
+  labs(title = "Resting blood pressure distribution and Heart Attack Risk",
+       x = "Heart Attack Likelihood",
+       y = "Resting BP")+
+  scale_fill_brewer(palette = "Accent") 
+```
+
+
+\n In our dataset, the the distribution of resting blood pressure of those more and less likely to have a heart attack is not significantly different. This may not be a significant predictor of heart attack in our analysis!
+
+\n In looking through the distributions of numerical biometric features in our data, maximum heart rate seems to be a more significant indicator of heart attack risk compared to resting blood pressure and cholesterol - The average maximum heart rate of those more likely to have a heart attack seems distinctly higher than the average heart rate of those less likely. This might be an important predictor of heart attack in our analysis! 
+
+```{r}
+#correlation matrix for numerical data. 
+heart_corr <- cor(heart_clean %>% dplyr::select_if(is.numeric))
+corrplot::corrplot(heart_corr, tl.cex = 1)
+```
+
+
+
+
+\n Here is a correlation matrix of our numerical variables - age, resting blood pressure, cholesterol, and maximum heart rate. We see that the correlations occur are all pretty low, stabilized around +/- 0.4 . 
+
+
+```{r}
+#reverting back to original format
+
+heart_clean$cp <- as.factor(heart_clean$cp)
+heart_clean$thall <- as.factor(heart_clean$thall)
+
+# Plot
+ggplot(heart_clean, aes(x=cp, y=max_hr, color=thall)) + 
+  geom_point(position=position_jitter(width=0.2), alpha=0.6) +
+  labs(
+    x="Type of Chest Pain",
+    y="Maximum Heart Rate",
+    color="Thall Result"
+  ) +
+  theme_minimal() 
+
+```
+
+
+
+
+
+\n Here, we see a scatterplot of the relationships between Max heart rate, chest pain, and Thallamic test results. Most people with typical anginas have thallamic test results indicating reversible defects. There are mostly people with "fixed defect" thallamic test results who have non-anginal pain. Max Heart rate range is the widest in those with typical anginas, and starts to narrow a bit in the other chest-pain categories. 
+
+
+## Analysis data wrangling 
+
+Here, we are using one hot encoding for our categorical variables to use them in logistic regression analysis to make our model more accurate. 
+
+```{r}
+heart_analysis <- heart_clean
+
+# Convert the relevant columns to factors
+heart_analysis$cp <- as.factor(heart_analysis$cp)
+heart_analysis$restecg <- as.factor(heart_analysis$restecg)
+heart_analysis$thall <- as.factor(heart_analysis$thall)
+
+# One-hot encode the factors using model.matrix(), exclude the intercept
+cp_onehot <- model.matrix(~ cp - 1, data = heart_analysis)
+restecg_onehot <- model.matrix(~ restecg - 1, data = heart_analysis)
+thall_onehot <- model.matrix(~ thall - 1, data = heart_analysis)
+
+# Combine the new one-hot encoded columns with the original dataframe
+# Make sure to exclude the first column of each one-hot encoded set
+heart_analysis <- cbind(heart_analysis, cp_onehot[, -1], restecg_onehot[, -1], thall_onehot[, -1])
+
+# Now remove the original columns for cp, restecg, and thal
+heart_analysis$cp <- NULL
+heart_analysis$restecg <- NULL
+heart_analysis$thall <- NULL
+
+
+# The dataframe 'heart_analysis' now contains the original data along with the one-hot encoded columns
+# Reverting the binary factor variables back to numeric binary format
+heart_analysis$sex <- ifelse(heart_analysis$sex == "female", 0, 1)
+heart_analysis$fbs <- ifelse(heart_analysis$fbs == "false", 0, 1)
+heart_analysis$exng <- ifelse(heart_analysis$exng == "no", 0, 1)
+heart_analysis$chance_HA <- ifelse(heart_analysis$chance_HA== "less likely", 0, 1)
+
+#remove age_group since it is a leveled variable 
+heart_analysis$age_group <- NULL
+heart_analysis
+
+```
+
+```{r}
+
+write.csv(heart_analysis, file = "heart_analysis.csv")
+
+```
+
+
+## Question 1 Analysis
+
+Here, we will be conducting analysis to answer our first question - To what degree do certain demographic and biometric factors influence the chance that someone will get a heart attack? More specifically, we will be using a logistic regression model because it is designed to be used for binary outcomes - in our case we want to whether a heart attack will occur given certain factors. 
+
+
+First we begin by splitting our dataset into training and testing sets. We will determine the best model using our training set and then evaluate it with our testing set. If the model has a high accuracy, then we will use the generated model to determine which factors influence the chance of a heart attack the most. 
+
+```{r}
+# Load necessary libraries
+library(caret)
+library(dplyr)
+
+# Assuming your dataframe is named 'df'
+# Splitting data into training and testing sets
+set.seed(42) # for reproducibility
+partition <- createDataPartition(heart_analysis$chance_HA, p = 0.7, list = FALSE)
+training_set <- heart_analysis[partition, ]
+testing_set <- heart_analysis[-partition, ]
+
+# Fitting logistic regression model on the training set
+model <- glm(chance_HA ~ ., data = training_set, family = "binomial")
+
+summary(model)
+
+```
+
+We then use the model to make predictions on the test set and then use the results to evaluate the model.
+
+
+```{r}
+# Making predictions on the test set
+predictions <- predict(model, testing_set, type = "response")
+predicted_class <- ifelse(predictions > 0.5, 1, 0)
+```
+
+
+```{r}
+    # Evaluating the model
+    confusion_matrix <- table(Predicted = predicted_class, Actual = testing_set$chance_HA)
+    performance_metrics <- confusionMatrix(confusion_matrix)
+    # Print the confusion matrix and performance metrics
+    print(performance_metrics)
+```
+
+```{r}
+summary(model)
+```
+
+
+## Question 2 Analysis
+
+Here, we will be conducting analysis to answer our second question - How might these degrees differ between men and women? More specifically, we will be using a logistic regression (LR) model because the variable we will be predicting - whether someone is likely to get a heart attack, is a binary variable.
+
+
+```{r}
+#splitting data by gender. 
+
+male_data <- heart_analysis |> filter (sex == 1)
+male_data
+
+```
+```{r}
+female_data <- heart_analysis |> filter (sex == 0)
+female_data
+```
+
+```{r}
+# Fitting a logistic regression model for male data
+set.seed(42) # for reproducibility
+partition_male <- createDataPartition(male_data$chance_HA, p = 0.7, list = FALSE)
+training_set_male <- male_data[partition_male, ]
+testing_set_male <- male_data[-partition_male, ]
+
+model_male <- glm(chance_HA ~ ., data = training_set_male, family = "binomial")
+
+model_male
+```
+```{r}
+# Making predictions on the test set (male)
+predictions_male <- predict(model_male, testing_set_male, type = "response")
+predicted_class_male <- ifelse(predictions_male > 0.5, 1, 0)
+
+```
+
+```{r}
+ # Evaluating the model- male
+    confusion_matrix_male <- table(Predicted = predicted_class_male, Actual = testing_set_male$chance_HA)
+    performance_metrics_male <- confusionMatrix(confusion_matrix_male)
+    # Print the confusion matrix and performance metrics
+    print(performance_metrics_male)
+```
+
+
+```{r}
+summary(model_male)
+```
+
+```{r}
+# Fitting a logistic regression model for female data
+set.seed(42) # for reproducibility
+partition_female <- createDataPartition(female_data$chance_HA, p = 0.7, list = FALSE)
+training_set_female <- female_data[partition_female, ]
+testing_set_female <- female_data[-partition_female, ]
+
+model_female <- glm(chance_HA ~ ., data = training_set_female, family = "binomial")
+
+model_female
+```
+
+
+
+
+```{r}
+# Making predictions on the test set (female)
+predictions_female <- predict(model_female, testing_set_female, type = "response")
+predicted_class_female <- ifelse(predictions_female > 0.5, 1, 0)
+
+```
+
+```{r}
+ # Evaluating the model- female
+    confusion_matrix_female <- table(Predicted = predicted_class_female, Actual = testing_set_female$chance_HA)
+    performance_metrics_female <- confusionMatrix(confusion_matrix_female)
+    # Print the confusion matrix and performance metrics
+    print(performance_metrics_female)
+```
+```{r}
+summary(model_female)
+```
+
+
+```{r}
+#further investigation 
+isolate_hypertrophy <- glm(chance_HA ~ restecghypertrophy, data = male_data, family = "binomial")
+summary(isolate_hypertrophy)
+
+```
+Rest_ecghypertrophy NA value in the male model is due to low statistical significance of Rest_ecghypertrophy in male subjects - very few patients had this result in the data. 
+
+```{r}
+#now age separation 
+#rerun for age seperated code: 
+heart_analysis2<- heart_clean 
+
+# Convert the relevant columns to factors
+heart_analysis2$cp <- as.factor(heart_analysis2$cp)
+heart_analysis2$restecg <- as.factor(heart_analysis2$restecg)
+heart_analysis2$thall <- as.factor(heart_analysis2$thall)
+
+# One-hot encode the factors using model.matrix(), exclude the intercept
+cp_onehot <- model.matrix(~ cp - 1, data = heart_analysis2)
+restecg_onehot <- model.matrix(~ restecg - 1, data = heart_analysis2)
+thall_onehot <- model.matrix(~ thall - 1, data = heart_analysis2)
+
+# Combine the new one-hot encoded columns with the original dataframe
+# Make sure to exclude the first column of each one-hot encoded set
+heart_analysis2 <- cbind(heart_analysis2, cp_onehot[, -1], restecg_onehot[, -1], thall_onehot[, -1])
+
+# Now remove the original columns for cp, restecg, and thal
+heart_analysis2$cp <- NULL
+heart_analysis2$restecg <- NULL
+heart_analysis2$thall <- NULL
+
+
+# The dataframe 'heart_analysis' now contains the original data along with the one-hot encoded columns
+# Reverting the binary factor variables back to numeric binary format
+heart_analysis2$sex <- ifelse(heart_analysis2$sex == "female", 0, 1)
+heart_analysis2$fbs <- ifelse(heart_analysis2$fbs == "false", 0, 1)
+heart_analysis2$exng <- ifelse(heart_analysis2$exng == "no", 0, 1)
+heart_analysis2$chance_HA <- ifelse(heart_analysis2$chance_HA== "less likely", 0, 1)
+
+
+```
+
+## Results 
+
+Question 1 Results:
+
+Here, we will be providing our interpretation of the results from our question 1 analysis:
+
+The generated model has an accuracy of 86.6% which indicates that it was able to accurately predict whether or not someone had a heart attack most of the time. Now we can revisit the model to determine which factors influence the chance of someone getting a heart attack the most. 
+
+As it can be seen from the results above the model shows that the factors that are best predictors of the occurrence of a heart attack are sex, max heart rate, atypical angina, non-anginal pain, and asymptomatic chest pain. Let’s examine the significance of the coefficient for each factor:
+‘sex’: indicates that males have a lower chance of having a heart attack compared to females.
+'max_hr': indicates that a higher heart rate correlates with a greater chance of a heart attack. 
+‘cpatypical angina’: indicates that an angina that does not follow the typical patterns of heart pain, correlates with a greater chance of a heart attack 
+'cpnon-anginal pain': indicates that the presence of pain not in the heart, such as a result of gastrointestinal issues, correlates with a greater chance of a heart attack
+'cpasymptomatic': suggests that many individuals who experience heart attacks generally don't experience pain. 
+
+Lastly, the sensitivity of our model was 0.8462 which means that it detects 84.625% of patients who are likely to get a heart attack but 15.375% go undetected. The specificity of our model was 0.8824 which means that it accurately detects 88.24% of patients who are not likely to get a heart attack. 
+
+Question 2 Results: 
+
+Heart attack likelihood in males: 
+As it can be seen from the results above the model shows that the factors that are best predictors of the occurrence of a heart attack in males are cholesterol, max heart rate, and thallreversible defect. Let’s examine the significance of the coefficient for each factor:
+‘chol’: indicates that lower levels of cholesterol correlate with a greater chance of heart attack
+'max_hr': indicates that a higher heart rate correlates with a greater chance of a heart attack. 
+‘thallreversible defect’: indicates that individuals who have normal blood flow at rest but not under stress correlates with a lesser chance of a heart attack.
+Lastly, the sensitivity of our model was 0.8182 which means that it detects 81.82% of patients who are likely to get a heart attack but 18.18% go undetected. The specificity of our model was 0.6786 which means that it accurately detects 67.86% of patients who are not likely to get a heart attack.
+
+Heart attack likelihood in females: 
+As it can be seen from the results above the model shows that the factors that are best predictors of the occurrence of a heart attack in females is the fasting blood sugar. The coefficient of this factor indicates that lower levels of fasting blood sugar are correlated with a greater chance of a heart attack.
+Model Accuracy - female
+Lastly, the sensitivity of our model was 0.7143 which means that it detects 71.43% of patients who are likely to get a heart attack but 28.57% go undetected. The specificity of our model was 0.8571 which means that it accurately detects 85.71% of patients who are not likely to get a heart attack.
+
+
+
+## Discussion, Limitations, and Future Suggestions 
+
+Through our analysis, we found that overall across both genders, sex, maximum heart rate, and chest pain type are the most influential factors in heart attack likelihood prediction. Other variables, including age, resting blood pressure, cholesterol levels, fasting blood sugar, exercise-induced angina, and different thallium stress test results, were not statistically significant predictors at the p<0.05 level. While looking more specifically at each gender, we found that for females, fasting blood sugar levels below 120 mg/dL was the only significant indicator of more likelihood of heart attack. In males, we found that cholesterol, max heart rate, and a thallamic test result of reversible defect indicated a higher likelihood of heart attack. This is surprising as previous work indicated that blood pressure and cholesterol levels were bigger indicators of heart attack risk. 
+
+A main limitation of our project was the dataset composition - there was a significantly lower number of female patients compared to male patients (half as many females). This may have presented a skewed result in our sex-based analysis (question 2). An interesting result we found through our analysis was that age was not a statistically significant predictor in the overall group or in the specific gendered analyses. This is surprising given the previous work done on this topic that indicates that males are more likely to have heart attacks compared to females. Another limitation was our chance of heart attack threshold - in our dataset, chance of likelihood was calculated as "over 50%" - a stricter threshold might indicate other important predictors. 
+
+Future investigations that would be helpful in understanding what puts an individual at high risk for heart attacks would be to investigate the impact age and ethnicity have in predicting the likelihood of someone suffering a heart attack. We believe that if we are able to find a dataset that accurately represents a variety of age ranges and ethnicities we would be able to more accurately predict what causes someone to suffer from a heart attack. Our current dataset had a skewed representation of age ranges, which provided us with inaccurate generalizations, therefore it is important to find a dataset that accurately represents the normal distribution of the population so the results can be generalized. 
+
+
+## Sources 
+
+CardiacDirect. (2022, September 29). What does a heart attack look like on an EKG? https://www.cardiacdirect.com/what-does-a-heart-attack-look-like-on-an-ekg/ 
+
+Centers for Disease Control and Prevention. (2023, May 15). Heart disease facts. Centers for Disease Control and Prevention. https://www.cdc.gov/heartdisease/facts.htm 
+
+Centers for Disease Control and Prevention. (2022, September 8). Heart disease and stroke. Centers for Disease Control and Prevention. https://www.cdc.gov/chronicdisease/resources/publications/factsheets/heart-disease-stroke.htm#:~:text=The%20Nation’s%20Risk%20Factors%20and,unhealthy%20diet%2C%20and%20physical%20inactivity. 
+
+Department of Health. Heart Disease and Stroke Prevention. (2023). https://www.health.ny.gov/diseases/cardiovascular/heart_disease/#:~:text=About%20695%2C000%20people%20die%20of,Americans%20have%20a%20heart%20attack.
+
+Heart attack. Johns Hopkins Medicine. (n.d.). https://www.hopkinsmedicine.org/health/conditions-and-diseases/heart-attack
+
+
+Press, A. (2023, August 10). Covid took a toll on heart health - and doctors are still grappling with how to help. STAT. https://www.statnews.com/2023/08/10/covid-heart-health/#:~:text=Heart%20attack%2Dcaused%20deaths%20rose,the%20pandemic’s%20first%20two%20years. 
+
+Rahman, R. (2021, March 22). Heart attack analysis &amp; prediction dataset. Kaggle. https://www.kaggle.com/datasets/rashikrahmanpritom/heart-attack-analysis-prediction-dataset 
+
+Throughout life, heart attacks are twice as common in men than women. Harvard Health. (2016, November 8). https://www.health.harvard.edu/heart-health/throughout-life-heart-attacks-are-twice-as-common-in-men-than-women#:~:text=Researchers%20found%20that%20throughout%20life,mass%20index%2C%20and%20physical%20activity. 
+
+World Health Organization. (2023a). Cardiovascular diseases. World Health Organization. https://www.who.int/health-topics/cardiovascular-diseases#tab=tab_1 
+
+4 Silent Heart Attack Signs. Pennmedicine.org. (2022). https://www.pennmedicine.org/updates/blogs/heart-and-vascular-blog/2022/april/4-silent-heart-attack-signs#:~:text=Chest%20Pain%2C%20Pressure%2C%20Fullness%2C%20or%20Discomfort&amp;text=Most%20heart%20attacks%20actually%20involve,go%20away%20and%20come%20back. 
+
+12 heart attack risk factors you can’t ignore. [Home]. (2018).  https://www.michiganmedicine.org/health-lab/12-heart-attack-risk-factors-you-cant-ignore 
