@@ -4,4 +4,6 @@ In the project, my team and I used a medical data set found on kaggle to help pr
 
 In order to do so, we began with data wrangling and exploratory data analysis, then built logistic regression models, and finally, evaluated our models using various metrics including confusion matrices, coefficient values, and p-values.
 
+This project was completed in R
+
 (Please download html file to view report)
